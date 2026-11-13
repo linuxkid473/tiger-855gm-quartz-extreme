@@ -17,7 +17,7 @@ This is a research/port log as much as a tool: it documents every wrong turn, be
 | 5 | `MI_FLUSH` after a batch needs `READ_FLUSH` (found by replaying Apple's batch on Linux) | `02000000` -> `02000001` | patch p49 |
 | 6 | Chip registers differ from what Linux sets; `MI_ARB_STATE` is a *masked* register (write `0x00020002`, plain `2` is silently ignored) | write Linux's values at start-up | patches p47/p48 |
 | 7 | **Root cause of the boot-time stall:** after power-up the 3D engine hangs on Apple's first compositor jobs until one complete, self-contained 3D state batch has run ("priming"); the primed state survives warm reboots, which is why every earlier fix only "worked" on warm boots | inject one IGT gen2 textured-copy batch into the ring at the first submission | **patch p51** (`mk_p51.py`) |
-| 8 | ring/batch memory is written through cacheable CPU mappings (defensive: GPU could read stale RAM) | `wbinvd` before ring TAIL updates (p50); not needed once primed, removed in p52 | `mk_p50.py [nocache]` |
+| 8 | ring/batch memory is written through cacheable CPU mappings (defensive: GPU could read stale RAM) | `wbinvd` before ring TAIL updates (p50), kept in the verified p51; the variant without it (p52) is optional | `mk_p50.py [nocache]` |
 | 9 | QuickTime video uses 80-100% CPU under QE: QTKit takes the Core Image path, whose fragment programs run in the *software* GL emulator | force QTKit's QuickDraw ("GWorld") path: two 9-byte getter patches | `tools/qtkit_force_gworld.py`, [docs/08](docs/08-video-playback.md) |
 
 Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte patches: [PATCH_TABLES.md](PATCH_TABLES.md) and [docs/03-patch-reference.md](docs/03-patch-reference.md).
@@ -46,7 +46,7 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 ## Quick start (high level)
 
 1. Obtain the inputs (your own legal copies) - see the build guide.
-2. `python3 abi-port/abiport.py vtables` / `calls` to translate the DTK kext, apply the p2-p8 byte edits (JSON/tables), then `mk_p45.py` -> `mk_p48.py` -> `mk_p50.py ... nocache` -> `mk_p51.py` (= p52). Verify the md5 of each stage against [PATCH_TABLES.md](PATCH_TABLES.md) (only valid if your input was byte-identical to mine).
+2. `python3 abi-port/abiport.py vtables` / `calls` to translate the DTK kext, apply the p2-p8 byte edits (JSON/tables), then `mk_p45.py` -> `mk_p48.py` -> `mk_p50.py` -> `mk_p51.py` (= p51, the verified kext; p52 = same without the per-submit `wbinvd`, optional). Verify the md5 of each stage against [PATCH_TABLES.md](PATCH_TABLES.md) (only valid if your input was byte-identical to mine).
 3. Install the kext, the pristine GL driver, the 10.4.1 OpenGL pieces and the QE `Configuration.plist`, rebuild the kext cache, reboot.
 4. For video: `python3 tools/qtkit_force_gworld.py QTKit QTKit.new` and install it ([docs/08](docs/08-video-playback.md)).
 

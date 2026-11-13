@@ -23,8 +23,9 @@ python3 abiport.py calls            # translate call sites -> work/out/AppleInte
 # apply the p1->p8 byte edits from PATCH_TABLES.md (file offset / old bytes / new bytes; each stage lists its md5)
 python3 mk_p45.py work/out/AppleIntel830.p8   work/out/AppleIntel830.p45b
 python3 mk_p48.py work/out/AppleIntel830.p45b work/out/AppleIntel830.p48b
-python3 mk_p50.py work/out/AppleIntel830.p48b work/out/AppleIntel830.p50n nocache
-python3 mk_p51.py work/out/AppleIntel830.p50n work/out/AppleIntel830.p52
+python3 mk_p50.py work/out/AppleIntel830.p48b work/out/AppleIntel830.p50b          # READ_FLUSH + wbinvd
+python3 mk_p51.py work/out/AppleIntel830.p50b work/out/AppleIntel830.p51          # + priming = recommended, verified from a cold power-on
+# optional: ... p50n nocache -> mk_p51.py -> p52 (no per-submit wbinvd; only warm-boot tested)
 ```
 
 Every script asserts the exact original bytes before patching; if an assertion fails your input differs from the one used here. Checksums of the author's chain are at the top of [PATCH_TABLES.md](../PATCH_TABLES.md) (they match only for byte-identical inputs). Use `python3 tools/gen_patch_tables.py` to diff your own chain.
@@ -34,11 +35,16 @@ Every script asserts the exact original bytes before patching; if an assertion f
 ```bash
 # new inode, never overwrite the running file in place
 D=/System/Library/Extensions/AppleIntel830.kext/Contents/MacOS
-sudo cp AppleIntel830.p52 $D/AppleIntel830.new
+sudo cp AppleIntel830.p51 $D/AppleIntel830.new
 sudo chown root:wheel $D/AppleIntel830.new && sudo chmod 755 $D/AppleIntel830.new
 sudo mv -f $D/AppleIntel830.new $D/AppleIntel830
 sudo kextcache -k /System/Library/Extensions
+# check the cache really changed; if the machine's clock is behind, kextcache -k can decide the old cache is still current:
+ls -la /System/Library/Extensions.mkext
+sudo touch /System/Library/Extensions && sudo kextcache -l -m /System/Library/Extensions.mkext /System/Library/Extensions
 ```
+
+**Pitfall:** on the author's machine the RTC was wrong (clock jumped backwards every boot), so `Extensions.mkext` looked newer than the kext and `kextcache -k` left a *stale* cache that still contained an older kext. Always confirm the mkext's size/time changed after installing a kext.
 
 Test a new kext **without installing** by loading it from a staging folder: `sudo kextload -l -m /Library/Staging830/AppleIntel830.kext` (a bad kext then costs one reboot, not a boot loop). Never put an untested kext into `/System/Library/Extensions`: it is cached in `Extensions.mkext` and a hang at boot needs the recovery procedure.
 
