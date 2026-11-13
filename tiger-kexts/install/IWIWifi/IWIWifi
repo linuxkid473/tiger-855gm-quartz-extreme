@@ -1,0 +1,9 @@
+#!/bin/sh
+. /etc/rc.common
+StartService () {
+    ConsoleMessage "Starting Wi-Fi (Intel 2200BG)"
+    /usr/local/sbin/iwi-connect boot >/dev/null 2>&1 &
+}
+StopService () { return 0; }
+RestartService () { StartService; }
+RunService "$1"

@@ -1,0 +1,14 @@
+#!/bin/sh
+# iwi-setup - store the Wi-Fi network name and passphrase in /etc/iwi.conf (root only) and connect
+[ "`id -u`" = 0 ] || { echo "run it as:  sudo iwi-setup"; exit 1; }
+cur=`sed -n 's/^ssid=//p' /etc/iwi.conf 2>/dev/null | head -1`
+[ -n "$cur" ] || cur=
+printf "Wi-Fi network name [%s]: " "$cur"; read ssid; [ -n "$ssid" ] || ssid=$cur
+printf "Wi-Fi passphrase (not shown): "; stty -echo; read psk; stty echo; echo
+[ ${#psk} -ge 8 ] 2>/dev/null || [ -n "$psk" ] || { echo "empty passphrase"; exit 1; }
+umask 077
+printf 'ssid=%s\npsk=%s\n' "$ssid" "$psk" > /etc/iwi.conf
+chmod 600 /etc/iwi.conf
+echo "saved to /etc/iwi.conf (readable by root only); connecting ..."
+/usr/local/sbin/iwi-connect || exit 1
+nohup /usr/local/sbin/iwi-connect watch >/dev/null 2>&1 &

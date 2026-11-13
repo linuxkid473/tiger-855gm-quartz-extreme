@@ -1,0 +1,5 @@
+#!/bin/sh
+echo "--- net.iwi.status"; sysctl -n net.iwi.status
+echo "--- scan"; sysctl -n net.iwi.scan
+echo "--- last log lines"; sysctl -n net.iwi.log | tail -12
+echo "--- en1"; ifconfig en1

@@ -1,0 +1,6 @@
+{
+  Description     = "Intel PRO/Wireless 2200BG Wi-Fi";
+  Provides        = ("Wi-Fi");
+  Requires        = ("Network");
+  OrderPreference = "None";
+}
