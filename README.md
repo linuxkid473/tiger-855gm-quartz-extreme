@@ -26,8 +26,10 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 
 **Included:** all source code, the patch generators (`mk_p4x.py`, `mk_p50.py`, `glfix*.py`, `gafix.py`), the ABI-translation tooling, kernel-extension sources and build scripts, diagnostic kexts (prebuilt, built from the sources here), Linux/GParted reference tooling, register dumps, test batches, and detailed documentation.
 
-**Not included (and you must not expect them here):**
-* Any Apple binary: `AppleIntel830.kext`, `AppleIntel830GA.plugin`, `AppleIntel830GLDriver.bundle`, `OpenGL.framework` pieces, kernels. Apple's files are not redistributable. You need your own copies from a Tiger x86 DTK 10.4.1 image (see [docs/04-build-and-install.md](docs/04-build-and-install.md)). The patches are published as generator scripts and byte tables that you apply to *your* copy; every step lists the expected checksum so you can verify.
+**Included binaries:** the patched `AppleIntel830` kext (p51 recommended, plus the intermediate versions) in [`binaries/`](binaries/). These are Apple-derived (modified copies of the DTK 10.4.1 kext); see the notice in `binaries/README.md`.
+
+**Not included:**
+* The GL driver, GA plug-in, `OpenGL.framework` pieces, QTKit and kernels (Apple's). You need your own copies from a Tiger x86 DTK 10.4.1 image / your Tiger install ([docs/04-build-and-install.md](docs/04-build-and-install.md)). The patches are published as generator scripts and byte tables that you apply to *your* copy; every step lists the expected checksum so you can verify.
 * Intel's `iwi-bss` firmware (Wi-Fi driver): generate `fw_bss.h` yourself with `tiger-kexts/mkfw.sh` from the firmware you obtain under Intel's licence.
 * The kernel header tree (`xnu-792.13.8`): small stand-in headers are in `tiger-kexts/stub/` so the diagnostic kexts build without it.
 
@@ -37,6 +39,7 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 |---|---|
 | [`docs/`](docs/) | Architecture, investigation timeline, patch reference, build/install guide, tools, recovery procedure, open issues, lessons |
 | [`PATCH_TABLES.md`](PATCH_TABLES.md) | Generated (`tools/gen_patch_tables.py`) exact file-offset/old-bytes/new-bytes tables for the kext chain p1 ... p8, p45b, p48b, p50b, p51, p52 with checksums |
+| [`binaries/`](binaries/) | Patched `AppleIntel830` kext (p51 recommended) and intermediate versions with checksums |
 | [`tools/`](tools/) | `qtkit_force_gworld.py` (video fix), `gen_patch_tables.py`, GL extension-string experiments, `ext.rb` |
 | [`abi-port/`](abi-port/) | `abiport.py` (vtable + call-site translation), `glfix.py`/`glfix2.py` (GL driver), `gafix.py` (GA plug-in), `mk_p44` ... `mk_p51.py` (kext patches), Mach-O/HFS+ readers, Ruby GL test kit |
 | [`tiger-kexts/`](tiger-kexts/) | Kernel-extension sources: `gttwatch`, `gttfill`, `gpuregs`, `gpudump`, `gpupoke`, `mmiodiff`, `gpustress` (test harness that submits batches through Apple's own ring path), and the Intel 2200BG Wi-Fi driver; build scripts; `prebuilt/*.tar` |
@@ -60,7 +63,7 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 
 ## License and notices
 
-Original code and documentation in this repository are released under the MIT License (see `LICENSE`). Apple, Mac OS X, Quartz Extreme, QuickTime and Tiger are trademarks of Apple Inc.; Intel and 855GM are trademarks of Intel Corporation. This project is not affiliated with or endorsed by either company. It contains no Apple or Intel proprietary code; it documents how to modify copies you already own. The Linux/Mesa/IGT register and command-layout facts used here were read from the public GPL/MIT sources; no GPL code is included in the kext sources.
+Original code and documentation in this repository are released under the MIT License (see `LICENSE`). Apple, Mac OS X, Quartz Extreme, QuickTime and Tiger are trademarks of Apple Inc.; Intel and 855GM are trademarks of Intel Corporation. This project is not affiliated with or endorsed by either company. The source and docs contain no Apple or Intel proprietary code; `binaries/` holds Apple-derived kext binaries (see its README). The Linux/Mesa/IGT register and command-layout facts used here were read from the public GPL/MIT sources; no GPL code is included in the kext sources.
 
 ## Credits
 

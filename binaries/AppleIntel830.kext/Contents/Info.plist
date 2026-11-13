@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>AppleIntel830</string>
+	<key>CFBundleGetInfoString</key>
+	<string>AppleIntel830 1.4.0.24</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.apple.driver.AppleIntel830</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Apple Embedded Graphics Kernel Extension</string>
+	<key>CFBundlePackageType</key>
+	<string>KEXT</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.4.0</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>4.0.0</string>
+	<key>IOKitPersonalities</key>
+	<dict>
+		<key>Intel830</key>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.apple.driver.AppleIntel830</string>
+			<key>GARTCacheSize</key>
+			<integer>67108864</integer>
+			<key>IOCFPlugInTypes</key>
+			<dict>
+				<key>ACCF0000-0000-0000-0000-000a2789904e</key>
+				<string>AppleIntel830GA.plugin</string>
+			</dict>
+			<key>IOClass</key>
+			<string>Intel830</string>
+			<key>IODVDBundleName</key>
+			<string>AppleIntel830DVDDriver</string>
+			<key>IOGLBundleName</key>
+			<string>AppleIntel830GLDriver</string>
+			<key>IOMatchCategory</key>
+			<string>IOAccelerator</string>
+			<key>IOPCIMatch</key>
+			<string>0x25628086 0x25728086 0x35828086</string>
+			<key>IOProviderClass</key>
+			<string>IOPCIDevice</string>
+			<key>IOSourceVersion</key>
+			<string>0.0.0.0.0</string>
+		</dict>
+		<key>Intel915</key>
+		<dict>
+			<key>CFBundleIdentifier</key>
+			<string>com.apple.driver.AppleIntel830</string>
+			<key>GARTCacheSize</key>
+			<integer>67108864</integer>
+			<key>IOCFPlugInTypes</key>
+			<dict>
+				<key>ACCF0000-0000-0000-0000-000a2789904e</key>
+				<string>AppleIntel915GA.plugin</string>
+			</dict>
+			<key>IOClass</key>
+			<string>Intel830</string>
+			<key>IODVDBundleName</key>
+			<string>AppleIntel830DVDDriver</string>
+			<key>IOGLBundleName</key>
+			<string>AppleIntel915GLDriver</string>
+			<key>IOMatchCategory</key>
+			<string>IOAccelerator</string>
+			<key>IOPCIMatch</key>
+			<string>0x25828086 0x25928086</string>
+			<key>IOProviderClass</key>
+			<string>IOPCIDevice</string>
+			<key>IOSourceVersion</key>
+			<string>0.0.0.0.0</string>
+		</dict>
+	</dict>
+	<key>OSBundleLibraries</key>
+	<dict>
+		<key>com.apple.iokit.IOGraphicsFamily</key>
+		<string>1.0.0b1</string>
+		<key>com.apple.iokit.IONDRVSupport</key>
+		<string>1.0.0b1</string>
+		<key>com.apple.iokit.IOPCIFamily</key>
+		<string>1.0.0b1</string>
+		<key>com.apple.kernel.iokit</key>
+		<string>1.0.0b1</string>
+	</dict>
+</dict>
+</plist>
