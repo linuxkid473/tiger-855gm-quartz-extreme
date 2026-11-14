@@ -5,6 +5,7 @@
 | File | md5 | Notes |
 |---|---|---|
 | `AppleIntel830.kext/` | `05526065323cbfcf8dbf8b748677d1d8` (executable) | **p51 - recommended.** 2D accel + QE; verified from a cold power-on. Install per the guide (`kextcache`, new inode). |
+| `variants/AppleIntel830.p54` | `988258e0c102c31e1b0514d0c3109d0f` | p53 + spin/yield GPU waits (smoother). Generator: `abi-port/mk_p54.py`. Currently the author's installed kext. |
 | `variants/AppleIntel830.p53` | `9000d051b0f65c1db3e20b447acbf411` | p51 + vblank-synced swap (tear-free). Generator: `abi-port/mk_p53.py`. Short soak only. |
 | `variants/AppleIntel830.p8` | `c33b692b6d4335f3f915d9f6667751ee` | Stable 2D-acceleration-only base (pipe-B fix). Use as the recovery kext. |
 | `variants/AppleIntel830.p45b` | `97cbb1f6d4f9466aeef232a826a0636d` | p8 + capture hook for the `gpustress` harness. |
