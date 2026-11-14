@@ -1,0 +1,176 @@
+#!/bin/sh
+# iwi-connect [boot|watch]
+#   (no argument)  load the iwi kext, read /etc/iwi.conf, connect (WPA2) and put the DHCP lease on en1, then exit
+#   boot           same, then stay and keep en1 in sync if the lease changes (used by the StartupItem; has a crash guard)
+#   watch          only the keep-in-sync loop (used by iwi-setup after a successful connect)
+# /etc/iwi.conf (created by `sudo iwi-setup`):   ssid=NETWORK   psk=PASSPHRASE
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+KEXT=/Library/Extensions/iwi.kext
+CONF=/etc/iwi.conf
+GUARD=/var/db/.iwi.starting
+LOG=/var/log/iwi.log
+MODE="$1"
+retry_or_exit() {
+    rm -f $GUARD
+    if [ "$MODE" = boot ]; then log "retrying in 20 s"; sleep 20; exec /usr/local/sbin/iwi-connect boot; fi
+    exit 1
+}
+log() { echo "`date '+%b %d %H:%M:%S'` $*" >> $LOG; echo "$*"; }
+
+[ "`id -u`" = 0 ] || { echo "iwi-connect: run as root (sudo)"; exit 1; }
+
+apply() {
+    ip=`echo $1 | sed 's/.*ip=\([0-9.]*\).*/\1/'`
+    mask=`echo $1 | sed 's/.*mask=\([0-9.]*\).*/\1/'`
+    rtr=`echo $1 | sed 's/.*router=\([0-9.]*\).*/\1/'`
+    dns=`echo $1 | sed 's/.*dns=\([0-9.]*\).*/\1/'`
+    ifconfig en1 inet $ip netmask $mask up
+    log "en1 = $ip/$mask router $rtr dns $dns"
+    # when the wired port has no address, Wi-Fi is the way out: default route + DNS
+    if ! ifconfig en0 2>/dev/null | grep -q "inet "; then
+        route -n delete default >/dev/null 2>&1
+        route -n add default $rtr >/dev/null 2>&1
+        log "default route via $rtr (wired port has no address)"
+    fi
+}
+
+# keep en1 usable whatever happens to the wired port.  When en0 is not active (cable out, interface down) the routes that
+# belonged to it are useless: move the subnet route and the default route to en1 and point DNS at the router.  When en0
+# comes back, drop our routes and ask its DHCP client to put its own back.
+# Tiger's resolver and Safari follow configd's idea of the network, which does not know about en1 (a plain BSD
+# interface): publish en1 as a service while the wired port is unusable so DNS and "are we online" checks work.
+PUBLISHED=0
+configd_ready() { echo "list" | scutil 2>/dev/null | grep -q "State:"; }
+publish_sc() {
+    configd_ready || return 1
+    printf 'd.init\nd.add ServerAddresses * %s\nd.add DomainName home\nset State:/Network/Service/IWI/DNS\nd.init\nd.add Addresses * %s\nd.add SubnetMasks * %s\nd.add Router %s\nd.add InterfaceName en1\nset State:/Network/Service/IWI/IPv4\n' "$1" "$2" "$3" "$4" | scutil >/dev/null 2>&1
+    PUBLISHED=1
+    log "published en1 to the system configuration (DNS $1)"
+}
+unpublish_sc() {
+    printf 'remove State:/Network/Service/IWI/DNS\nremove State:/Network/Service/IWI/IPv4\n' | scutil >/dev/null 2>&1
+    PUBLISHED=0
+    log "withdrew en1 from the system configuration"
+}
+
+OVERRIDE=0
+keep_routes() {
+    d=`sysctl -n net.iwi.dhcp 2>/dev/null`
+    case "$d" in ip=*) ;; *) return;; esac
+    ip=`echo $d | sed 's/.*ip=\([0-9.]*\).*/\1/'`
+    mask=`echo $d | sed 's/.*mask=\([0-9.]*\).*/\1/'`
+    rtr=`echo $d | sed 's/.*router=\([0-9.]*\).*/\1/'`
+    dns=`echo $d | sed 's/.*dns=\([0-9.]*\).*/\1/'`
+    net=`echo $ip | sed 's/\.[0-9]*$/.0/'`
+    ifconfig en1 2>/dev/null | grep -q "inet $ip" || ifconfig en1 inet $ip netmask $mask up
+    if ifconfig en0 2>/dev/null | grep -q "status: active"; then
+        if [ $OVERRIDE = 1 ]; then
+            route -n delete default >/dev/null 2>&1
+            route -n delete -net $net >/dev/null 2>&1
+            ipconfig set en0 DHCP >/dev/null 2>&1
+            OVERRIDE=0
+            log "wired port is back: handed the routes back to en0"
+        fi
+        [ $PUBLISHED = 1 ] && unpublish_sc
+        return
+    fi
+    # en0 is not usable.  Publish first (configd may touch the routes when it sees the service), then make sure the
+    # subnet route and the default route really point at en1 -- checked on every pass, not just once.
+    [ $PUBLISHED = 0 ] && publish_sc "$dns" "$ip" "$mask" "$rtr"
+    pfx=${ip%.*}
+    if ! netstat -rn -f inet 2>/dev/null | grep "^$pfx " | grep -q " en1"; then
+        route -n delete -net $net >/dev/null 2>&1
+        route -n add -net $net -netmask $mask -interface en1 >/dev/null 2>&1
+        OVERRIDE=1
+        log "wired port is not active: subnet route moved to en1"
+    fi
+    if ! route -n get default 2>/dev/null | grep -q "interface: en1"; then
+        route -n delete default >/dev/null 2>&1
+        route -n add default $rtr >/dev/null 2>&1
+        OVERRIDE=1
+        log "wired port is not active: default route via $rtr on en1"
+    fi
+}
+
+DOWN=0
+link_check() {
+    # watchdog: if the link has been down ~15 s (AP restarted, out of range, dropped), re-issue the connect command,
+    # then again every ~30 s until it is back
+    case "`sysctl -n net.iwi.status 2>/dev/null`" in
+      *linked=1*) [ $DOWN -ge 5 ] && log "link is back"; DOWN=0;;
+      *) DOWN=`expr $DOWN + 1`
+         if [ $DOWN -ge 5 ] && [ `expr $DOWN % 10` = 5 ]; then
+             log "link down; reconnecting"
+             sysctl -w net.iwi.cmd=9 >/dev/null 2>&1
+         fi;;
+    esac
+}
+
+sync_loop() {
+    last="$1"
+    while :; do
+        sleep 3
+        link_check
+        d=`sysctl -n net.iwi.dhcp 2>/dev/null`
+        case "$d" in ip=*) [ "$d" != "$last" ] && { apply "$d"; last="$d"; };; esac
+        keep_routes
+    done
+}
+
+if [ "$1" = watch ]; then
+    d=`sysctl -n net.iwi.dhcp 2>/dev/null`
+    sync_loop "$d"
+fi
+
+if [ "$1" = boot ]; then
+    # crash guard: if the previous automatic start never finished (hang/panic), skip this one
+    # (count consecutive unfinished starts: one hard reset/power cycle during a start must not disable Wi-Fi on the next
+    # boot; only a repeating hang/panic does.  A clean shutdown clears the counter, see the StartupItem's StopService.)
+    n=`cat $GUARD 2>/dev/null`; case "$n" in [0-9]*) ;; *) n=0;; esac
+    if [ "$n" -ge 2 ]; then rm -f $GUARD; log "two previous starts did not finish; skipping automatic start this time"; exit 0; fi
+    echo `expr $n + 1` > $GUARD
+fi
+[ -f $CONF ] || { log "no $CONF: run  sudo iwi-setup"; rm -f $GUARD; exit 1; }
+ssid=`sed -n 's/^ssid=//p' $CONF | head -1`
+psk=`sed -n 's/^psk=//p' $CONF | head -1`
+[ -n "$ssid" ] && [ -n "$psk" ] || { log "$CONF needs ssid= and psk="; rm -f $GUARD; exit 1; }
+
+kextstat 2>/dev/null | grep -q com.local.iwi || kextload $KEXT >> $LOG 2>&1 || { log "kextload failed"; rm -f $GUARD; exit 1; }
+sleep 1
+sysctl -w "net.iwi.ssid=$ssid" >/dev/null
+sysctl -w "net.iwi.psk=$psk" >/dev/null
+sysctl -w net.iwi.cmd=9 >/dev/null
+log "connecting to '$ssid' ..."
+i=0
+while [ $i -lt 600 ]; do
+    st=`sysctl -n net.iwi.status`
+    case "$st" in *linked=1*) break;; esac
+    # still not linked: leave a trace of why, and after ~90 s restart the card (down, then auto-connect again), every ~120 s
+    if [ $i -gt 0 ] && [ `expr $i % 30` = 0 ]; then
+        log "not linked after ${i}s: $st"; sysctl -n net.iwi.log | tail -4 | while read l; do [ -n "$l" ] && log "  $l"; done
+    fi
+    if [ $i -ge 90 ] && [ `expr \( $i - 90 \) % 120` = 0 ]; then
+        log "restarting the card"
+        sysctl -w net.iwi.cmd=5 >/dev/null 2>&1; sleep 2
+        sysctl -w net.iwi.ssid="$ssid" >/dev/null; sysctl -w net.iwi.psk="$psk" >/dev/null
+        sysctl -w net.iwi.cmd=9 >/dev/null 2>&1
+    fi
+    sleep 2; i=`expr $i + 2`
+done
+case "$st" in
+  *linked=1*) log "link is up";;
+  *) log "not connected: $st"; sysctl -n net.iwi.log | tail -6 | while read l; do [ -n "$l" ] && log "  $l"; done; retry_or_exit;;
+esac
+# the kext runs the DHCP client itself (en1 is a plain BSD interface that configd/ipconfig do not manage)
+i=0
+d=
+while [ $i -lt 150 ]; do
+    d=`sysctl -n net.iwi.dhcp 2>/dev/null`
+    case "$d" in ip=*) break;; esac
+    sleep 1; i=`expr $i + 1`
+done
+case "$d" in ip=*) ;; *) log "no DHCP lease yet: $d"; retry_or_exit;; esac
+rm -f $GUARD
+apply "$d"
+[ "$1" = boot ] && sync_loop "$d"
+exit 0

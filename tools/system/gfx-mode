@@ -1,0 +1,13 @@
+#!/bin/sh
+# gfx-mode vsync|fast|status   (needs sudo + reboot)
+#   vsync: tear-free window moves/animations (p56); the software cursor flickers more (hidden until the vblank-synced copy is done)
+#   fast : no display wait before the swap copy (p56f); animations may tear, cursor flickers less
+K=/System/Library/Extensions/AppleIntel830.kext/Contents/MacOS/AppleIntel830
+case "$1" in
+  vsync) SRC=/Library/AppleIntel830.p56;;
+  fast)  SRC=/Library/AppleIntel830.p56f;;
+  *) echo "current: `md5 -q $K 2>/dev/null || md5 $K`"; echo "vsync=`md5 -q /Library/AppleIntel830.p56 2>/dev/null`  fast=`md5 -q /Library/AppleIntel830.p56f 2>/dev/null`"; exit 0;;
+esac
+[ "`id -u`" = 0 ] || { echo "run with sudo"; exit 1; }
+cp $SRC $K && chown root:wheel $K && chmod 755 $K && touch /System/Library/Extensions && kextcache -l -m /System/Library/Extensions.mkext /System/Library/Extensions >/dev/null 2>&1
+echo "installed $1; reboot to apply"

@@ -1,0 +1,10 @@
+#!/bin/sh
+. /etc/rc.common
+StartService () {
+    ConsoleMessage "Starting Wi-Fi (Intel 2200BG)"
+    /usr/local/sbin/iwi-connect boot >/dev/null 2>&1 &
+}
+# a clean shutdown/restart is not a crash: clear the crash-guard counter
+StopService () { rm -f /var/db/.iwi.starting; return 0; }
+RestartService () { StartService; }
+RunService "$1"

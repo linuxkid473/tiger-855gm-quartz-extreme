@@ -20,6 +20,7 @@ This is a research/port log as much as a tool: it documents every wrong turn, be
 | 8 | ring/batch memory is written through cacheable CPU mappings (defensive: GPU could read stale RAM) | `wbinvd` before ring TAIL updates (p50), kept in the verified p51; the variant without it (p52) is optional | `mk_p50.py [nocache]` |
 | 10 | Tearing in window drags / Dashboard (swap waits on a scan-line window) | wait for pipe-B vblank instead (`0x01800020` -> `0x01800080`) | **patch p53** (`mk_p53.py`), [docs/10](docs/10-vsync-p53.md) |
 | 11 | GPU waits polled with `IOSleep(1)` = 10.4 ms per wait on Tiger/x86 (WindowServer ~45% blocked) | yield (`thread_block(0)`) instead of sleeping | **patch p54** (`mk_p54.py`), [docs/13](docs/13-gpu-wait-latency-p54.md) |
+| 12 | whole-cache `wbinvd` on every GPU submission | flush just the 4 KB ring with `clflush` | **p56** (`mk_p56.py`), [docs/14](docs/14-cache-flush-video-vlc-wifi.md) |
 | 9 | QuickTime video uses 80-100% CPU under QE: QTKit takes the Core Image path, whose fragment programs run in the *software* GL emulator | force QTKit's QuickDraw ("GWorld") path: two 9-byte getter patches | `tools/qtkit_force_gworld.py`, [docs/08](docs/08-video-playback.md) |
 
 Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte patches: [PATCH_TABLES.md](PATCH_TABLES.md) and [docs/03-patch-reference.md](docs/03-patch-reference.md).
@@ -28,7 +29,7 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 
 **Included:** all source code, the patch generators (`mk_p4x.py`, `mk_p50.py`, `glfix*.py`, `gafix.py`), the ABI-translation tooling, kernel-extension sources and build scripts, diagnostic kexts (prebuilt, built from the sources here), Linux/GParted reference tooling, register dumps, test batches, and detailed documentation.
 
-**Included binaries:** the patched `AppleIntel830` kext (p51 = cold-boot-verified, p53 = p51 + vsync, p54 = p53 + low-latency GPU waits, plus the intermediate versions) in [`binaries/`](binaries/). These are Apple-derived (modified copies of the DTK 10.4.1 kext); see the notice in `binaries/README.md`.
+**Included binaries:** the patched `AppleIntel830` kext (p51 = cold-boot-verified, p53 = p51 + vsync, p54 = p53 + low-latency GPU waits, p56/p56f = cheap ring flush instead of wbinvd (snappiest; `f` = no vsync), plus the intermediate versions) in [`binaries/`](binaries/). These are Apple-derived (modified copies of the DTK 10.4.1 kext); see the notice in `binaries/README.md`.
 
 **Not included:**
 * The GL driver, GA plug-in, `OpenGL.framework` pieces, QTKit and kernels (Apple's). You need your own copies from a Tiger x86 DTK 10.4.1 image / your Tiger install ([docs/04-build-and-install.md](docs/04-build-and-install.md)). The patches are published as generator scripts and byte tables that you apply to *your* copy; every step lists the expected checksum so you can verify.
