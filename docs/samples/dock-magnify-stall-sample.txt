@@ -1,0 +1,166 @@
+===DOCK
+Analysis of sampling pid 1908 every 10.000000 milliseconds
+Call graph:
+    500 Thread_0117
+      500 0x2cbf1
+        500 0x2ccca
+          500 0x4a0b
+            500 CFRunLoopRun
+              500 CFRunLoopRunSpecific
+                483 mach_msg_trap
+                  483 mach_msg_trap
+                17 mshPerform
+                  16 0xff52
+                    16 snarfEvents
+                      16 _CGSGetPortStreamInline
+                        16 mach_msg_trap
+                          16 mach_msg_trap
+                  1 0xff7b
+                    1 CGSGetNextEventRecord
+                      1 0xffff5590
+                        1 0xffff5590
+    500 Thread_1103
+      500 _pthread_body
+        362 0xa955
+          208 0xef95
+            208 CGSReenableUpdate
+              208 CGSReenableUpdateForConnections
+                208 _CGSReenableUpdateForConnections
+                  208 mach_msg_trap
+                    208 mach_msg_trap
+          134 0xee3a
+            134 0x14819
+              134 CGSSetWindowTransforms
+                134 CGSSetWindowTransformsAtPlacement
+                  134 _CGSSetWindowTransformList
+                    134 mach_msg_trap
+                      134 mach_msg_trap
+          10 0xe9a9
+            5 0x12b01
+              5 CGContextFillRect
+                5 CGContextFillRects
+                  5 __CGContextDrawRects
+                    5 ripc_DrawRects
+                      5 ripc_Render
+                        5 ripl_BltShape
+                          5 ripd_Lock
+                            5 CGSDeviceLock
+                              5 _CGSLockWindow
+                                5 _CGSSynchronizeWindowBackingStore
+                                  5 mach_msg_trap
+                                    5 mach_msg_trap
+            2 0x12eff
+              2 CGContextFillRects
+                2 __CGContextDrawRects
+                  2 ripc_DrawRects
+                    2 ripc_Render
+                      2 ripc_GetColor
+                        2 CGColorTransformConvertColorComponents
+                          2 CGCMSInterfaceTransformConvertColorComponents
+                            2 CMSTransformConvertComponents
+                              1 CMSColorWorldConvertComponents
+===WS
+Analysis of sampling pid 78 every 10.000000 milliseconds
+Call graph:
+    500 Thread_0117
+      500 start
+        500 _start
+          500 main
+            500 CGXServer
+              500 CGXServerLoop
+                499 CGXRunOneServicesPass
+                  324 CGXRunOneServerPass
+                    128 CGXPostPortData
+                      128 connectionHandler
+                        127 CGXServices_server
+                          123 _XSetWindowTransformList
+                            123 _CGXSetWindowTransformList
+                              123 CGXSetWindowTransformList
+                                123 changeTransform
+                                  123 CGXWindowTileCacheGet
+                                    121 CGSDownsampleARGB
+                                      118 downsample
+                                        111 downsample
+                                        7 lanczosKernel
+                                          7 sinl
+                                            7 sinl
+                                      2 lanczosKernel
+                                        2 lanczosKernel
+                                      1 floor
+                                        1 floor
+                                    1 downsample
+                                      1 downsample
+                                    1 free
+                                      1 szone_free
+                                        1 vm_deallocate
+                                          1 mach_msg_trap
+                                            1 mach_msg_trap
+                          2 _XSetWindowShapeInline
+                            2 _CGXSetWindowShapeInline
+                              2 CGXSetWindowShapeWithWeighting
+                                1 CGXBackingStoreResize
+                                  1 CGXBackingStoreTextureRelease
+                                    1 CGXGLDestroyTexture
+                                      1 glDeleteTextures_Exec
+                                        1 gleDeleteHashNamesAndObjects
+                                          1 gleFreeTextureObject
+                                            1 gleDeletePluginTexture
+                                              1 gldDeleteTexture
+                                                1 gldReclaimTexture
+                                                  1 gldDestroyQuery
+                                                    1 io_connect_method_scalarI_structureI
+                                                      1 mach_msg_trap
+                                                        1 mach_msg_trap
+                                1 CGXGetScreenVisibleFrameShapeForWindow
+                                  1 opaqueShapeAboveForWindow
+                                    1 CGSDiffRegion
+                                      1 shape_difference
+                                        1 malloc_zone_malloc
+                                          1 szone_malloc
+                                            1 szone_malloc
+                          1 _XGetPortStreamInline
+                            1 _XGetPortStreamInline
+                          1 _XReenableUpdateForConnections
+                            1 _CGXReenableUpdateForConnections
+                              1 CGXReenableUpdateForConnections
+                                1 CGXUpdateDisplay
+                                  1 _CGSLogTraceTime
+                                    1 _CGSLogTraceTime
+                        1 pthread_getspecific
+                          1 pthread_getspecific
+                    108 mach_msg_trap
+                      108 mach_msg_trap
+                    88 mach_msg_overwrite_trap
+                      88 mach_msg_overwrite_trap
+                  172 _CGXRunTimerPass
+                    172 _CGXUpdateDisplayCallback
+                      172 CGXUpdateDisplay
+                        96 CGXUnshieldCursor
+                          96 CGXShieldCursorAsNeeded
+                            96 MPUnshieldCursor
+                              96 SysShowCursor
+                                96 MPPing
+                                  96 IOPSBlitIdle
+                                    96 _WaitComplete
+                                      96 io_connect_method_scalarI_structureI
+                                        96 mach_msg_trap
+                                          96 mach_msg_trap
+                        42 CGXReleaseDisplayDeviceSurface
+                          42 CGXGLAccelFinish
+                            42 glFlush_Exec
+                              42 gldFlush
+                                42 io_connect_map_memory
+Processes:  51 total, 3 running, 48 sleeping... 142 threads            14:42:52
+Load Avg:  1.89, 0.86, 0.36     CPU usage:  33.3% user, 66.7% sys, 0.0% idle
+SharedLibs: num =  133, resident = 28.1M code, 4.23M data, 9.14M LinkEdit
+MemRegions: num =  3108, resident = 56.0M + 7.85M private, 43.9M shared
+PhysMem:  87.4M wired, 75.9M active,  131M inactive,  295M used,  984M free
+VM: 3.75G + 86.1M   17391(0) pageins, 0(0) pageouts
+
+  PID COMMAND      %CPU   TIME   #TH #PRTS #MREGS RPRVT  RSHRD  RSIZE  VSIZE 
+ 2038 head         0.0%  0:00.00   1    13    17   116K   724K   344K  26.6M 
+ 2037 top          0.0%  0:00.04   1    19    19   208K   796K   656K  26.9M 
+ 2034 grep         0.0%  0:00.00   1    13    19   276K   804K   544K  26.8M 
+ 2033 ioreg        0.0%  0:00.37   1    38    19   796K   752K   908K  26.9M 
+
+[exited with code 0]

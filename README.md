@@ -2,7 +2,7 @@
 
 Hardware-accelerated desktop compositing (**Quartz Extreme**) and accelerated 2D on a Dell Inspiron 510m (Pentium M, Intel Extreme Graphics 2 / **855GM**, PCI `8086:3582`) running a retail-ABI **Mac OS X 10.4.8** (Darwin 8.8.1) "Hackintosh". Apple never shipped an i830-family accelerator for the x86 retail 10.4.8 kernel; this project ports Apple's own developer-transition-kit (10.4.1 DTK) Gen2 accelerator + GL driver to 10.4.8, and then finds and fixes the hardware/driver problems that stopped 3D from working.
 
-> **Status (2026-11-14):** System Profiler reports `Quartz Extreme: Supported`. The machine boots from a **cold power-on** straight into a QE desktop, survived a 9,000+ GPU-job window-wiggling soak and repeated reboots, and QuickTime video plays at ~30% CPU (640x360 H.264) with QE on. Core Image is *not* supported (the 855GM has no fragment-program hardware - not fixable). Ordinary applications still use the software OpenGL renderer (see [open issues](docs/07-open-issues.md)).
+> **Status (2026-11-14):** System Profiler reports `Quartz Extreme: Supported`. The machine boots from a **cold power-on** straight into a QE desktop, survived a 9,000+ GPU-job window-wiggling soak and repeated reboots, and QuickTime video plays at ~30% CPU (640x360 H.264) with QE on, and (p53) window moves / Dashboard animation are tear-free. Core Image is *not* supported (the 855GM has no fragment-program hardware - not fixable). Ordinary applications use the software OpenGL renderer by default; hardware GL for apps is opt-in and partial ([docs/11](docs/11-gl-frameworks-and-apps.md)).
 
 This is a research/port log as much as a tool: it documents every wrong turn, because most of the time went into finding that the final bug was not a GPU command problem at all: the 3D engine must be **primed** with one complete 3D state batch after power-up, and unused page-table entries must be valid.
 
@@ -18,6 +18,7 @@ This is a research/port log as much as a tool: it documents every wrong turn, be
 | 6 | Chip registers differ from what Linux sets; `MI_ARB_STATE` is a *masked* register (write `0x00020002`, plain `2` is silently ignored) | write Linux's values at start-up | patches p47/p48 |
 | 7 | **Root cause of the boot-time stall:** after power-up the 3D engine hangs on Apple's first compositor jobs until one complete, self-contained 3D state batch has run ("priming"); the primed state survives warm reboots, which is why every earlier fix only "worked" on warm boots | inject one IGT gen2 textured-copy batch into the ring at the first submission | **patch p51** (`mk_p51.py`) |
 | 8 | ring/batch memory is written through cacheable CPU mappings (defensive: GPU could read stale RAM) | `wbinvd` before ring TAIL updates (p50), kept in the verified p51; the variant without it (p52) is optional | `mk_p50.py [nocache]` |
+| 10 | Tearing in window drags / Dashboard (swap waits on a scan-line window) | wait for pipe-B vblank instead (`0x01800020` -> `0x01800080`) | **patch p53** (`mk_p53.py`), [docs/10](docs/10-vsync-p53.md) |
 | 9 | QuickTime video uses 80-100% CPU under QE: QTKit takes the Core Image path, whose fragment programs run in the *software* GL emulator | force QTKit's QuickDraw ("GWorld") path: two 9-byte getter patches | `tools/qtkit_force_gworld.py`, [docs/08](docs/08-video-playback.md) |
 
 Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte patches: [PATCH_TABLES.md](PATCH_TABLES.md) and [docs/03-patch-reference.md](docs/03-patch-reference.md).
@@ -26,7 +27,7 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 
 **Included:** all source code, the patch generators (`mk_p4x.py`, `mk_p50.py`, `glfix*.py`, `gafix.py`), the ABI-translation tooling, kernel-extension sources and build scripts, diagnostic kexts (prebuilt, built from the sources here), Linux/GParted reference tooling, register dumps, test batches, and detailed documentation.
 
-**Included binaries:** the patched `AppleIntel830` kext (p51 recommended, plus the intermediate versions) in [`binaries/`](binaries/). These are Apple-derived (modified copies of the DTK 10.4.1 kext); see the notice in `binaries/README.md`.
+**Included binaries:** the patched `AppleIntel830` kext (p51 = cold-boot-verified, p53 = p51 + vsync, plus the intermediate versions) in [`binaries/`](binaries/). These are Apple-derived (modified copies of the DTK 10.4.1 kext); see the notice in `binaries/README.md`.
 
 **Not included:**
 * The GL driver, GA plug-in, `OpenGL.framework` pieces, QTKit and kernels (Apple's). You need your own copies from a Tiger x86 DTK 10.4.1 image / your Tiger install ([docs/04-build-and-install.md](docs/04-build-and-install.md)). The patches are published as generator scripts and byte tables that you apply to *your* copy; every step lists the expected checksum so you can verify.
@@ -40,7 +41,7 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 | [`docs/`](docs/) | Architecture, investigation timeline, patch reference, build/install guide, tools, recovery procedure, open issues, lessons |
 | [`PATCH_TABLES.md`](PATCH_TABLES.md) | Generated (`tools/gen_patch_tables.py`) exact file-offset/old-bytes/new-bytes tables for the kext chain p1 ... p8, p45b, p48b, p50b, p51, p52 with checksums |
 | [`binaries/`](binaries/) | Patched `AppleIntel830` kext (p51 recommended) and intermediate versions with checksums |
-| [`tools/`](tools/) | `qtkit_force_gworld.py` (video fix), `gen_patch_tables.py`, GL extension-string experiments, `ext.rb` |
+| [`tools/`](tools/) | `qtkit_force_gworld.py` (video fix), `patchpaths.py` (GL framework-copy path rewrite), `hfsgrow.py`/`hfsverify.py` (in-place HFS+ grow), `gen_patch_tables.py`, GL extension-string experiments, `ext.rb` |
 | [`abi-port/`](abi-port/) | `abiport.py` (vtable + call-site translation), `glfix.py`/`glfix2.py` (GL driver), `gafix.py` (GA plug-in), `mk_p44` ... `mk_p51.py` (kext patches), Mach-O/HFS+ readers, Ruby GL test kit |
 | [`tiger-kexts/`](tiger-kexts/) | Kernel-extension sources: `gttwatch`, `gttfill`, `gpuregs`, `gpudump`, `gpupoke`, `mmiodiff`, `gpustress` (test harness that submits batches through Apple's own ring path), and the Intel 2200BG Wi-Fi driver; build scripts; `prebuilt/*.tar` |
 | [`bootdump/`](bootdump/) | Linux (GParted Live + i915) reference tooling: GEM batch emitters (Mesa-i830 style and an IGT gen2 port), a ctypes ioctl runner, MMIO register dumps from Linux and from a cold BIOS boot, a 16-bit real-mode register dumper |

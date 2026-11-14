@@ -3,7 +3,8 @@
 | Item | Status |
 |---|---|
 | **Core Image** | Not supported. The 855GM has no fragment-program hardware; the software float renderer emulates fragment programs on the CPU (slow). Not fixable. |
-| **Hardware OpenGL for applications** | Ordinary apps are deliberately kept on the software renderer (`GL_REJECT_HW` -> `HOME` trick) because the hardware renderer lacks `GL_APPLE_ycbcr_422`, `texture_rectangle` and `bgra` (25 vs 45 extensions) and offscreen rendering. Only WindowServer's compositor uses the 3D engine. |
+| **Tearing** | Fixed by p53 ([10](10-vsync-p53.md)); p53 has had one short session of use, p51 remains the verified-from-cold kext. |
+| **Hardware OpenGL for applications** | See [11](11-gl-frameworks-and-apps.md) for the framework-copy approach and per-app results (Extreme Tux Racer terrain missing, Halo freezes, Quake 3 PPC crashes). Original note: | Ordinary apps are deliberately kept on the software renderer (`GL_REJECT_HW` -> `HOME` trick) because the hardware renderer lacks `GL_APPLE_ycbcr_422`, `texture_rectangle` and `bgra` (25 vs 45 extensions) and offscreen rendering. Only WindowServer's compositor uses the 3D engine. |
 | **Video** | Fixed with the QTKit GWorld patch ([08](08-video-playback.md)): ~30% CPU for 640x360 H.264 on a Pentium M. Larger/more demanding videos were not measured. VLC was not measured. QTKit apps lose Core Image video effects. |
 | **p52 (no per-submit `wbinvd`)** | Untested from a cold power-on, and it is not known to have ever been the code that ran (a stale `Extensions.mkext` may have kept the previous kext). p51 is the verified, recommended kext. |
 | **Why priming is needed** | The IGT textured-copy batch cures the post-power-up hang, but the *mechanism* (which 3D state Apple's first jobs miss) is not understood. Plausible: some state the Linux/IGT batch sets explicitly is assumed by Apple's first compositor batches to have been set by an earlier full-state batch. |
