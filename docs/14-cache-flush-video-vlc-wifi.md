@@ -16,7 +16,7 @@ ffmpeg -i in.mov -vf scale=640:360:flags=lanczos,setsar=1 -c:v libx264 -profile:
 Main profile with B-frames made the same video choppy.
 
 ## VLC 0.9.10 (Intel)
-All its video outputs are OpenGL (`macosx`, `opengl`, `minimal_macosx`). `-[VLCGLView initWithVout:]` asks for `NSOpenGLPFAAccelerated`; with software-only GL that fails ("could not create OpenGL video output", sound but black). Patch (file offset 0x50cd2 of `libmacosx_plugin.dylib`): `c7 45 a4 49 00 00 00` -> `... 48 ...` (Accelerated -> NoRecovery). Then it plays, but at ~1 fps: 85% of the video thread is in the software renderer's fragment-emulation path (`gldFPEmulateScanline`, the YCbCr 4:2:2 rectangle texture) - needs hardware GL (ycbcr) to be fast. Use QuickTime.
+All its video outputs are OpenGL (`macosx`, `opengl`, `minimal_macosx`). `-[VLCGLView initWithVout:]` asks for `NSOpenGLPFAAccelerated`; with software-only GL that fails ("could not create OpenGL video output", sound but black). Patch (file offset 0x50cd2 of `libmacosx_plugin.dylib`): `c7 45 a4 49 00 00 00` -> `... 48 ...` (Accelerated -> NoRecovery). Then it plays, but at ~1 fps: 85% of the video thread is in the software renderer's fragment-emulation path (`gldFPEmulateScanline`, the YCbCr 4:2:2 rectangle texture) - needs hardware GL (ycbcr) to be fast - now solved, see [15](15-hardware-ycbcr-video.md) (`vlc-hw`).
 
 ## Wi-Fi start-up (tools/wifi)
 * crash guard counts consecutive unfinished starts (skip only after two), StopService clears it;

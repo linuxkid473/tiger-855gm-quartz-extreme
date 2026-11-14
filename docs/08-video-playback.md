@@ -55,4 +55,4 @@ Side effect: every QTKit-based app uses the QuickDraw path (no Core Image video 
 
 * Making the *hardware* renderer usable for video would need `GL_APPLE_ycbcr_422`, texture rectangles and BGRA in the hardware path (see [07-open-issues.md](07-open-issues.md)).
 * Core Image itself stays unsupported (no fragment-program hardware on the 855GM).
-* VLC was not measured.
+* VLC: see [15](15-hardware-ycbcr-video.md) (hardware YCbCr path, ~27% CPU).
