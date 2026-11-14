@@ -17,3 +17,17 @@
 Only the executable differs between versions; the `Info.plist` is the DTK one (`com.apple.driver.AppleIntel830`). The kext matches PCI `8086:3582` only (855GM). The GL driver, GA plug-in and `OpenGL.framework` pieces are **not** included; build them with `glfix*.py` / `gafix.py` from your own DTK copy.
 
 Not included: `iwi.kext` (the Wi-Fi driver) because it embeds Intel's firmware, which has its own licence - build it with `tiger-kexts/mkfw.sh`.
+
+## Other patched binaries
+
+**`apple-derived/`** - modified copies of Apple's Mac OS X Tiger / 10.4.1 DTK binaries (same notice as above: Apple's code, derived form, personal repo, no warranty):
+
+| File | md5 | What |
+|---|---|---|
+| `QTKit.gworld-patched` | `32fdc01f2bbd75eab151b543066ef0c2` | QTKit 7.1.3 with two 9-byte getter patches (force the QuickDraw "GWorld" path; i386 slice). Stock md5 `eb4931e6b4db2c7da60318273b26c441`. Generator: `tools/qtkit_force_gworld.py`. |
+| `AppleIntel830GLDriver.home-variant` | `7c3263bde5943a81ccfe9cd65433aaa7` | DTK GL driver whose `GL_REJECT_HW` switch name is renamed to `HOME`: every normal app gets the software renderer, WindowServer keeps the hardware QE compositor (the safe default). The pristine driver is the opt-in hardware one. |
+| `AppleIntel830GA.fixed` | `e8a89e08f92d4a48a398359789be736c` | GA plug-in answering the `cgls`/`BGRA` capability queries (`abi-port/gafix.py`). NOT what is installed on the author's machine at the moment: the original plug-in is (it also plays video fine, and 640x384 clips freeze the machine with either). |
+
+**`vlc/libmacosx_plugin.dylib.noaccel`** (`23c93ba563cc71c148486040c8ab7784`) - VLC 0.9.10 (Intel) macosx plug-in with the "accelerated pixel format required" request removed (`tools/vlc_noaccel.py`). Plays on software GL, but only at ~1 fps (see [docs/14](../docs/14-cache-flush-video-vlc-wifi.md)).
+
+Video files: use `tools/encode_tiger_video.sh` (Baseline, 360 lines, native frame rate).

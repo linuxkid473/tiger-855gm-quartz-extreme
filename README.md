@@ -42,7 +42,7 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 |---|---|
 | [`docs/`](docs/) | Architecture, investigation timeline, patch reference, build/install guide, tools, recovery procedure, open issues, lessons |
 | [`PATCH_TABLES.md`](PATCH_TABLES.md) | Generated (`tools/gen_patch_tables.py`) exact file-offset/old-bytes/new-bytes tables for the kext chain p1 ... p8, p45b, p48b, p50b, p51, p52 with checksums |
-| [`binaries/`](binaries/) | Patched `AppleIntel830` kext (p51 recommended) and intermediate versions with checksums |
+| [`binaries/`](binaries/) | Patched `AppleIntel830` kext variants (p51 verified from cold boot, p56/p56f snappiest), patched QTKit / GL driver / GA plug-in (`apple-derived/`) and the VLC plug-in patch, all with checksums |
 | [`tools/`](tools/) | `qtkit_force_gworld.py` (video fix), `patchpaths.py` (GL framework-copy path rewrite), `hfsgrow.py`/`hfsverify.py` (in-place HFS+ grow), `gen_patch_tables.py`, GL extension-string experiments, `ext.rb` |
 | [`abi-port/`](abi-port/) | `abiport.py` (vtable + call-site translation), `glfix.py`/`glfix2.py` (GL driver), `gafix.py` (GA plug-in), `mk_p44` ... `mk_p51.py` (kext patches), Mach-O/HFS+ readers, Ruby GL test kit |
 | [`tiger-kexts/`](tiger-kexts/) | Kernel-extension sources: `gttwatch`, `gttfill`, `gpuregs`, `gpudump`, `gpupoke`, `mmiodiff`, `gpustress` (test harness that submits batches through Apple's own ring path), and the Intel 2200BG Wi-Fi driver; build scripts; `prebuilt/*.tar` |
