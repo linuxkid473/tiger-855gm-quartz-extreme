@@ -123,9 +123,11 @@ if [ -f /Library/OGL1041/OpenGL.framework/Versions/A/Libraries/libGL.dylib ]; th
     wrap_app /Applications/Chess.app/Contents/MacOS/Chess "$S/tools/system/app-wrapper-hw" && say "Chess starts on the hardware GL stack"
     # video players stay on the machine's old GL setup even when `glmode on` makes hardware GL the session default (GPU-assisted video froze
     # this GPU, docs/16/17).  NOT the /Library/OGL1048 stack: QuickTime fails there ("invalid pixel format").
-    for app in "VLC.app/Contents/MacOS/VLC" "QuickTime Player.app/Contents/MacOS/QuickTime Player" "DVD Player.app/Contents/MacOS/DVD Player"; do
+    for app in "QuickTime Player.app/Contents/MacOS/QuickTime Player" "DVD Player.app/Contents/MacOS/DVD Player"; do
         wrap_app "/Applications/$app" "$S/tools/system/app-wrapper-stock" && say "$app kept on the stock GL setup"
     done
+    # VLC: stock GL setup by default; the vlc-hw launcher (VLC HW icon) requests hardware GL for one launch, still through LaunchServices
+    wrap_app /Applications/VLC.app/Contents/MacOS/VLC "$S/tools/system/app-wrapper-vlc" && say "VLC wrapper installed (stock GL; vlc-hw = hardware for one launch)"
     put "$S/tools/system/glmode" /usr/local/bin/glmode 755
 else say "no /Library/OGL1041: skipping the iTunes/Chess hardware-GL wrappers"; fi
 

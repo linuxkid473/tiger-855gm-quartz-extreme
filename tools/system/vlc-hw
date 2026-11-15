@@ -1,8 +1,7 @@
 #!/bin/sh
-# (starts VLC.bin, the real binary: the installed VLC wrapper would strip the hardware GL stack set below)
-# Launch VLC on the hardware 855GM OpenGL renderer (hardware YCbCr video).
-# HOME is deliberately absent: the GL driver treats HOME as "software renderer for normal apps".
-exec env -i PATH=/usr/bin:/bin:/usr/sbin \
-  DYLD_FRAMEWORK_PATH=/Library/OGL1041 \
-  DYLD_LIBRARY_PATH=/Library/OGL1041/OpenGL.framework/Versions/A/Libraries \
-  /Applications/VLC.app/Contents/MacOS/VLC.bin --no-plugins-cache "$@"
+# Start VLC on the HARDWARE 855GM OpenGL renderer (hardware YCbCr video). EXPERIMENTAL: can lock the GPU up (docs/16, docs/17).
+# VLC is started through LaunchServices (`open -a VLC`) so it is a normal app (Dock icon, menu bar, Cmd-Q); the installed VLC wrapper
+# (tools/system/app-wrapper-vlc) sees the request file and uses the hardware stack for that launch.  If VLC is already running the
+# files are just handed to that instance (quit it first to get a hardware launch).
+touch /tmp/.vlc-hw-request
+exec open -a VLC "$@"

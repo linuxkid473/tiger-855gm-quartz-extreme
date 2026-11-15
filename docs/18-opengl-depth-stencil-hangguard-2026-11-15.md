@@ -53,3 +53,9 @@ unless **Automatic login** is enabled (System Preferences > Accounts > Login Opt
   the DYLD variables, i.e. the machine's old default GL setup), so `glmode on` does not touch them.  Verified: with the redirect set in the caller's environment the wrapped
   VLC and QuickTime processes have no `DYLD_FRAMEWORK_PATH`.  Do NOT use `app-wrapper-sw` (`/Library/OGL1048`) for QuickTime: it fails with "invalid pixel format" and crashed.
 * Other caveats: any other app that is not safe on hardware GL needs the same wrapper; PPC (Rosetta) GL apps cannot use the redirected frameworks (docs/11).
+
+## 7. VLC HW as a proper app
+The first `vlc-hw` exec'd `VLC.bin` straight from a shell script, so VLC was not registered with LaunchServices (no Dock icon / menu bar / Cmd-Q).  Now VLC always starts through
+LaunchServices: `VLC.app/Contents/MacOS/VLC` is `tools/system/app-wrapper-vlc` (real binary `VLC.bin`); it uses the stock GL setup by default, and uses the hardware stack for one launch when
+`vlc-hw` (the VLC HW icon) has just touched `/tmp/.vlc-hw-request` and called `open -a VLC`.  Do not pass `--no-plugins-cache` together with LaunchServices' `-psn_` argument: VLC dies during startup.
+Verified with the hardware stack in the process environment: menu bar/Dock icon correct, `tell application "VLC" to quit` ends it, video plays with correct colours.

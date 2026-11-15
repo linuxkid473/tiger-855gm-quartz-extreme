@@ -1,0 +1,14 @@
+#!/bin/sh
+# Installed as VLC.app/Contents/MacOS/VLC (real binary renamed VLC.bin).  VLC always starts through LaunchServices (Dock icon, menu bar,
+# Cmd-Q).  Default: the machine's old stock GL setup (software; safe).  If `vlc-hw` asked for hardware GL a moment ago (request file
+# younger than a minute) this launch uses the hardware stack instead.  (The private driver gives hardware GL whether or not HOME is set.)
+REQ=/tmp/.vlc-hw-request
+if [ -f "$REQ" ] && [ -n "`find "$REQ" -mmin -1 2>/dev/null`" ]; then
+    rm -f "$REQ"
+    DYLD_FRAMEWORK_PATH=/Library/OGL1041
+    DYLD_LIBRARY_PATH=/Library/OGL1041/OpenGL.framework/Versions/A/Libraries
+    export DYLD_FRAMEWORK_PATH DYLD_LIBRARY_PATH
+    exec "$0.bin" "$@"
+fi
+unset DYLD_FRAMEWORK_PATH DYLD_LIBRARY_PATH
+exec "$0.bin" "$@"
