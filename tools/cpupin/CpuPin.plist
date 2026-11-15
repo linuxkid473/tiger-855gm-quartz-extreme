@@ -1,0 +1,6 @@
+{
+  Description     = "CPU SpeedStep pin";
+  Provides        = ("CpuPin");
+  Requires        = ("Disks");
+  OrderPreference = "Early";
+}

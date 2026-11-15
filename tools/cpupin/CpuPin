@@ -1,0 +1,15 @@
+#!/bin/sh
+. /etc/rc.common
+# Pins the Pentium M at its top SpeedStep state (see cpupin.c). Crash guard: if the previous boot never
+# finished loading it, skip once.
+GUARD=/var/db/.cpupin.starting
+StartService () {
+    ConsoleMessage "Loading CPU pin (SpeedStep top state)"
+    if [ -f $GUARD ]; then rm -f $GUARD; return 0; fi
+    touch $GUARD
+    /sbin/kextload /Library/Extensions/cpupin.kext >/dev/null 2>&1
+    ( sleep 40; rm -f $GUARD ) &
+}
+StopService () { rm -f $GUARD; return 0; }
+RestartService () { return 0; }
+RunService "$1"

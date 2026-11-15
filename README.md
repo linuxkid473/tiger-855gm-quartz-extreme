@@ -22,6 +22,7 @@ This is a research/port log as much as a tool: it documents every wrong turn, be
 | 11 | GPU waits polled with `IOSleep(1)` = 10.4 ms per wait on Tiger/x86 (WindowServer ~45% blocked) | yield (`thread_block(0)`) instead of sleeping | **patch p54** (`mk_p54.py`), [docs/13](docs/13-gpu-wait-latency-p54.md) |
 | 12 | whole-cache `wbinvd` on every GPU submission | flush just the 4 KB ring with `clflush` | **p56** (`mk_p56.py`), [docs/14](docs/14-cache-flush-video-vlc-wifi.md) |
 | 13 | VLC video ~1 fps in the software renderer (hardware renderer lacks texture_rectangle / bgra / ycbcr_422; YCbCr byte order wrong in the driver's format table) | advertise the three extensions + swap the two YCbCr table records | **`tools/ycc_hw.py`**, `vlc-hw` launcher, [docs/15](docs/15-hardware-ycbcr-video.md) |
+| 14 | hardware-GL VLC hangs the GPU; p54's GPU wait gave up after < 2 s instead of ~10 s; CPU dropped to 600 MHz every ~69 s; Wi-Fi slow without ethernet | **p54t** (p54 with 100x timeout), `cpupin` kext, iwi-connect v4 | [docs/16](docs/16-gpu-hang-cpu-pin-wifi-2026-11-15.md) |
 | 9 | QuickTime video uses 80-100% CPU under QE: QTKit takes the Core Image path, whose fragment programs run in the *software* GL emulator | force QTKit's QuickDraw ("GWorld") path: two 9-byte getter patches | `tools/qtkit_force_gworld.py`, [docs/08](docs/08-video-playback.md) |
 
 Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte patches: [PATCH_TABLES.md](PATCH_TABLES.md) and [docs/03-patch-reference.md](docs/03-patch-reference.md).

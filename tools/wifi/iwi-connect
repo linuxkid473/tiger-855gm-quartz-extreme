@@ -127,7 +127,7 @@ if [ "$1" = boot ]; then
     # (count consecutive unfinished starts: one hard reset/power cycle during a start must not disable Wi-Fi on the next
     # boot; only a repeating hang/panic does.  A clean shutdown clears the counter, see the StartupItem's StopService.)
     n=`cat $GUARD 2>/dev/null`; case "$n" in [0-9]*) ;; *) n=0;; esac
-    if [ "$n" -ge 2 ]; then rm -f $GUARD; log "two previous starts did not finish; skipping automatic start this time"; exit 0; fi
+    if [ "$n" -ge 3 ]; then rm -f $GUARD; log "three previous starts did not finish; skipping automatic start this time"; exit 0; fi
     echo `expr $n + 1` > $GUARD
 fi
 [ -f $CONF ] || { log "no $CONF: run  sudo iwi-setup"; rm -f $GUARD; exit 1; }
@@ -142,9 +142,21 @@ sysctl -w "net.iwi.psk=$psk" >/dev/null
 sysctl -w net.iwi.cmd=9 >/dev/null
 log "connecting to '$ssid' ..."
 i=0
+RETRY=0
+GCLR=0
 while [ $i -lt 600 ]; do
     st=`sysctl -n net.iwi.status`
     case "$st" in *linked=1*) break;; esac
+    # the card is up and answering: a hard reset from here on must not count as a failed start
+    if [ $GCLR = 0 ] && [ $i -ge 6 ]; then case "$st" in *up=1*) rm -f $GUARD; GCLR=1;; esac; fi
+    # a failed handshake is retried straight away (the kernel would wait ~20 s); at most 12 quick retries
+    case "$st" in
+      *"state=connect failed"*)
+        if [ $RETRY -lt 12 ]; then
+            RETRY=`expr $RETRY + 1`; log "handshake failed, retrying now ($RETRY)"
+            sysctl -w net.iwi.cmd=9 >/dev/null 2>&1
+        fi;;
+    esac
     # still not linked: leave a trace of why, and after ~90 s restart the card (down, then auto-connect again), every ~120 s
     if [ $i -gt 0 ] && [ `expr $i % 30` = 0 ]; then
         log "not linked after ${i}s: $st"; sysctl -n net.iwi.log | tail -4 | while read l; do [ -n "$l" ] && log "  $l"; done
@@ -155,7 +167,7 @@ while [ $i -lt 600 ]; do
         sysctl -w net.iwi.ssid="$ssid" >/dev/null; sysctl -w net.iwi.psk="$psk" >/dev/null
         sysctl -w net.iwi.cmd=9 >/dev/null 2>&1
     fi
-    sleep 2; i=`expr $i + 2`
+    sleep 1; i=`expr $i + 1`
 done
 case "$st" in
   *linked=1*) log "link is up";;
