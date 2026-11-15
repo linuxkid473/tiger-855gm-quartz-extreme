@@ -1,0 +1,35 @@
+#!/bin/sh
+# glmode on|off|status [user]  -  make hardware OpenGL the default for every app of a user's login session (docs/18).
+#   on     writes ~/.MacOSX/environment.plist (DYLD_FRAMEWORK_PATH / DYLD_LIBRARY_PATH -> /Library/OGL1041, the hardware stack with
+#          the private depth/stencil-fixed driver).  Takes effect at the NEXT LOGIN (log out and in).
+#   off    removes it (back to the default: software GL for apps, hardware only for the compositor).  Also at next login.
+# One program can still opt out:  GL_REJECT_HW=1 <app>   (software renderer),  or use `glsw <app>` (consistent software stack).
+# VLC, QuickTime Player and DVD Player are wrapped onto the software stack by the installer (video through the GPU froze this machine).
+U=${2:-${SUDO_USER:-`id -un`}}
+H=`eval echo ~$U`
+D=$H/.MacOSX; P=$D/environment.plist
+case "$1" in
+  on)
+    if [ -f "$P" ] && ! grep -q OGL1041 "$P"; then echo "glmode: $P exists with other settings; merge DYLD_FRAMEWORK_PATH/DYLD_LIBRARY_PATH by hand"; exit 1; fi
+    mkdir -p "$D"
+    cat > "$P" <<PL
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>DYLD_FRAMEWORK_PATH</key>
+	<string>/Library/OGL1041</string>
+	<key>DYLD_LIBRARY_PATH</key>
+	<string>/Library/OGL1041/OpenGL.framework/Versions/A/Libraries</string>
+</dict>
+</plist>
+PL
+    chown -R $U "$D" 2>/dev/null
+    echo "glmode: hardware GL default ON for $U - log out and back in to apply" ;;
+  off)
+    if [ -f "$P" ] && grep -q OGL1041 "$P"; then rm -f "$P"; echo "glmode: OFF for $U - log out and back in to apply"; else echo "glmode: not on"; fi ;;
+  status)
+    if [ -f "$P" ] && grep -q OGL1041 "$P"; then echo "glmode: ON for $U (file present; active only if the session was started after it was written)"; else echo "glmode: off for $U"; fi
+    echo "this shell: DYLD_FRAMEWORK_PATH=${DYLD_FRAMEWORK_PATH:-<unset>}" ;;
+  *) echo "usage: glmode on|off|status [user]"; exit 1 ;;
+esac

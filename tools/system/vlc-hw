@@ -1,7 +1,8 @@
 #!/bin/sh
+# (starts VLC.bin, the real binary: the installed VLC wrapper would strip the hardware GL stack set below)
 # Launch VLC on the hardware 855GM OpenGL renderer (hardware YCbCr video).
 # HOME is deliberately absent: the GL driver treats HOME as "software renderer for normal apps".
 exec env -i PATH=/usr/bin:/bin:/usr/sbin \
   DYLD_FRAMEWORK_PATH=/Library/OGL1041 \
   DYLD_LIBRARY_PATH=/Library/OGL1041/OpenGL.framework/Versions/A/Libraries \
-  /Applications/VLC.app/Contents/MacOS/VLC --no-plugins-cache "$@"
+  /Applications/VLC.app/Contents/MacOS/VLC.bin --no-plugins-cache "$@"

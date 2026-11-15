@@ -41,11 +41,18 @@ if [ -f "$G" ]; then
     else warn "GL driver has an unknown checksum (`md5of $G`): not replaced"; fi
 else warn "no AppleIntel830GLDriver.bundle: install it from your DTK copy first (abi-port/glfix*.py), then re-run"; fi
 
-# 3. Patched GLEngine for the opt-in hardware-GL stack (/Library/OGL1041, a path-rewritten 10.4.1 OpenGL.framework copy)
+# 3. Opt-in hardware-GL stack (/Library/OGL1041, a path-rewritten 10.4.1 OpenGL.framework copy): patched GLEngine whose driver
+#    search path is /Library/OGL1041/Ext/, plus a private copy of the GL driver with the depth/stencil readback fix (docs/18).
+#    Only processes started on that stack (glhw, wrapped iTunes/Chess) use them; WindowServer and normal apps keep the /System driver.
 E=/Library/OGL1041/OpenGL.framework/Versions/A/Resources/GLEngine.bundle/GLEngine
 if [ -f "$E" ]; then
-    if isknown "$E" 8af6c56bfdb8c9f566585a4ee8a983fb 91ff01fdd0f7500d810b300ab4e4b1a3; then
-        put "$S/binaries/apple-derived/GLEngine.1041.ycc" "$E" 755 && say "GLEngine (OGL1041) patched"
+    if isknown "$E" 8af6c56bfdb8c9f566585a4ee8a983fb 91ff01fdd0f7500d810b300ab4e4b1a3 5eb66dcf8d73e023d1c0862069ad550e; then
+        put "$S/binaries/apple-derived/GLEngine.1041.ycc-ext" "$E" 755 && say "GLEngine (OGL1041) patched, private driver dir /Library/OGL1041/Ext"
+        if [ -d $EXT/AppleIntel830GLDriver.bundle ]; then
+            rm -rf /Library/OGL1041/Ext && mkdir -p /Library/OGL1041/Ext && cp -R $EXT/AppleIntel830GLDriver.bundle /Library/OGL1041/Ext/
+            cp "$S/binaries/apple-derived/AppleIntel830GLDriver.depthstencil" /Library/OGL1041/Ext/AppleIntel830GLDriver.bundle/Contents/MacOS/AppleIntel830GLDriver
+            chown -R root:wheel /Library/OGL1041/Ext && say "private GL driver with depth/stencil readback fix installed"
+        else warn "no system GL driver bundle to copy into /Library/OGL1041/Ext"; fi
     else warn "OGL1041 GLEngine unknown checksum: not replaced"; fi
 else say "no /Library/OGL1041 (optional hardware-GL stack, see docs/11): skipping GLEngine"; fi
 
@@ -81,6 +88,48 @@ if [ -f /usr/local/sbin/iwi-connect ]; then
     put "$S/tools/wifi/iwi-connect" /usr/local/sbin/iwi-connect 755 && say "iwi-connect v4"
 else say "no iwi Wi-Fi setup found: skipping (build iwi.kext per tiger-kexts/, then re-run)"; fi
 
-# 8. rebuild the kext cache (the Dell clock is unreliable: force a newer timestamp on the directory)
+# 8. Report the system as 10.4.11 (many apps/installers refuse 10.4.8: Office 2008 wants 10.4.9+, Firefox 3.6 wants 10.4.11).
+#    Only SystemVersion.plist is changed (the original is backed up); undo with the backup copy.
+SV=/System/Library/CoreServices/SystemVersion.plist
+if [ -f "$SV" ]; then
+    if grep -q '<string>10.4.11</string>' "$SV"; then say "system version already reports 10.4.11"
+    else
+        backup "$SV"
+        sed -e 's#<string>10.4.[0-9]*</string>#<string>10.4.11</string>#' -e 's#<string>8[A-Z][0-9]*</string>#<string>8S165</string>#' "$SV" > /tmp/SystemVersion.plist.new \
+          && cp /tmp/SystemVersion.plist.new "$SV.new" && chmod 644 "$SV.new" && chown root:wheel "$SV.new" && mv -f "$SV.new" "$SV" && say "system version spoofed to 10.4.11 (build 8S165)"
+    fi
+fi
+
+# 10. GPU hang guard: reboots the machine when the 855GM ring stops moving for 20 s (see tools/hangguard/hangguard.c, docs/18).
+#     (The ICH4 hardware watchdog does not reset this machine, so this only catches hangs where the kernel is still running.)
+#     After a reboot the machine waits at the login window unless Automatic login is enabled (System Preferences > Accounts).
+rm -rf /Library/Extensions/hangguard.kext && cp -R "$S/binaries/hangguard/hangguard.kext" /Library/Extensions/ && chown -R root:wheel /Library/Extensions/hangguard.kext
+mkdir -p /Library/StartupItems/HangGuard
+put "$S/tools/hangguard/HangGuard" /Library/StartupItems/HangGuard/HangGuard 755
+put "$S/tools/hangguard/HangGuard.plist" /Library/StartupItems/HangGuard/StartupParameters.plist 644
+say "hangguard kext + StartupItem installed"
+
+# 11. GL launchers and per-app GL stacks (docs/11, docs/18)
+put "$S/tools/system/glhw" /usr/local/bin/glhw 755
+put "$S/tools/system/glsw" /usr/local/bin/glsw 755
+# wrap_app APP_EXECUTABLE WRAPPER: rename the real binary to <name>.bin and install WRAPPER in its place (idempotent)
+wrap_app() { exe="$1"; w="$2"; [ -f "$exe" ] || return 1
+    if [ -f "$exe.bin" ]; then :; else mv "$exe" "$exe.bin" || return 1; fi
+    cp "$w" "$exe.new" && chmod 775 "$exe.new" && chown root:admin "$exe.new" && mv -f "$exe.new" "$exe"; }
+if [ -f /Library/OGL1041/OpenGL.framework/Versions/A/Libraries/libGL.dylib ]; then
+    # iTunes visualizer: hardware GL (software GL runs it through the CPU fragment-program emulator, ~1 fps)
+    wrap_app /Applications/iTunes.app/Contents/MacOS/iTunes "$S/tools/system/app-wrapper-hw" && say "iTunes starts on the hardware GL stack"
+    # Chess: hardware GL (picks pieces with glReadPixels depth+stencil, fixed by the private driver above)
+    wrap_app /Applications/Chess.app/Contents/MacOS/Chess "$S/tools/system/app-wrapper-hw" && say "Chess starts on the hardware GL stack"
+    # video players stay on the machine's old GL setup even when `glmode on` makes hardware GL the session default (GPU-assisted video froze
+    # this GPU, docs/16/17).  NOT the /Library/OGL1048 stack: QuickTime fails there ("invalid pixel format").
+    for app in "VLC.app/Contents/MacOS/VLC" "QuickTime Player.app/Contents/MacOS/QuickTime Player" "DVD Player.app/Contents/MacOS/DVD Player"; do
+        wrap_app "/Applications/$app" "$S/tools/system/app-wrapper-stock" && say "$app kept on the stock GL setup"
+    done
+    put "$S/tools/system/glmode" /usr/local/bin/glmode 755
+else say "no /Library/OGL1041: skipping the iTunes/Chess hardware-GL wrappers"; fi
+
+# 9. rebuild the kext cache (the Dell clock is unreliable: force a newer timestamp on the directory)
 touch $EXT && kextcache -l -m /System/Library/Extensions.mkext $EXT >/dev/null 2>&1 && say "kext cache rebuilt"
+say "hardware GL for ALL apps: sudo glmode on <user>, then log out/in (glmode off undoes it)"
 say "done. Reboot to apply (kexts and the GL driver load at boot).  Check: gfx-mode status; kextstat | grep cpupin"

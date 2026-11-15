@@ -1,0 +1,5 @@
+#!/bin/sh
+# Installed as <App>.app/Contents/MacOS/<App> (real binary renamed <App>.bin): runs the app on the machine's old default GL setup
+# (software renderer, /System driver) even when `glmode on` makes the hardware stack the session default.
+unset DYLD_FRAMEWORK_PATH DYLD_LIBRARY_PATH
+exec "$0.bin" "$@"

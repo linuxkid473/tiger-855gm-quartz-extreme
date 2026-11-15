@@ -15,7 +15,7 @@ OPTS=(-o StrictHostKeyChecking=no
 [ -f "$KEY" ] && OPTS+=(-i "$KEY" -o IdentitiesOnly=yes)
 cd "$R"
 echo "packing $(du -sh binaries | cut -f1) of binaries + tools ..."
-COPYFILE_DISABLE=1 tar cf - binaries tools/system tools/wifi tools/cpupin/CpuPin tools/cpupin/CpuPin.plist setup/install_on_dell.sh \
+COPYFILE_DISABLE=1 tar cf - binaries tools/system tools/wifi tools/cpupin/CpuPin tools/cpupin/CpuPin.plist tools/hangguard/HangGuard tools/hangguard/HangGuard.plist setup/install_on_dell.sh \
   | ssh -T "${OPTS[@]}" "$HOST" 'rm -rf /tmp/tiger-setup && mkdir /tmp/tiger-setup && cd /tmp/tiger-setup && tar xf - && echo unpacked'
 ssh -t "${OPTS[@]}" "$HOST" 'sudo sh /tmp/tiger-setup/setup/install_on_dell.sh /tmp/tiger-setup'
 echo "done: reboot the Dell now ->  ssh ... 'sudo shutdown -r now'"

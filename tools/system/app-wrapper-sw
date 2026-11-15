@@ -1,0 +1,6 @@
+#!/bin/sh
+# Installed as <App>.app/Contents/MacOS/<App> (the real binary is renamed <App>.bin): starts the app on the self-consistent software GL stack.
+DYLD_FRAMEWORK_PATH=/Library/OGL1048
+DYLD_LIBRARY_PATH=/Library/OGL1048/OpenGL.framework/Versions/A/Libraries
+export DYLD_FRAMEWORK_PATH DYLD_LIBRARY_PATH
+exec "$0.bin" "$@"

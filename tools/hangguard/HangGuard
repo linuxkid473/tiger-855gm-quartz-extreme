@@ -1,0 +1,14 @@
+#!/bin/sh
+. /etc/rc.common
+# Reboots the machine if the 855GM hangs (see hangguard.c). Crash guard: if the previous boot never finished loading it, skip once.
+GUARD=/var/db/.hangguard.starting
+StartService () {
+    ConsoleMessage "Loading GPU hang guard"
+    if [ -f $GUARD ]; then rm -f $GUARD; return 0; fi
+    touch $GUARD
+    /sbin/kextload /Library/Extensions/hangguard.kext >/dev/null 2>&1
+    ( sleep 40; rm -f $GUARD ) &
+}
+StopService () { rm -f $GUARD; return 0; }
+RestartService () { return 0; }
+RunService "$1"

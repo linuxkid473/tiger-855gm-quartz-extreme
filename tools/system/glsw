@@ -1,0 +1,8 @@
+#!/bin/sh
+# glsw <command> [args]: run a program on the consistent stock 10.4.8 SOFTWARE OpenGL stack (/Library/OGL1048).
+# The default stack mixes the 10.4.1 GLEngine (needed by the hardware compositor) with 10.4.8 libraries, which
+# ghosts/blanks GL drawing; this one is self-consistent.
+DYLD_FRAMEWORK_PATH=/Library/OGL1048
+DYLD_LIBRARY_PATH=/Library/OGL1048/OpenGL.framework/Versions/A/Libraries
+export DYLD_FRAMEWORK_PATH DYLD_LIBRARY_PATH
+exec "$@"

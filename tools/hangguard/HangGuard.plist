@@ -1,0 +1,6 @@
+{
+  Description     = "GPU hang guard";
+  Provides        = ("HangGuard");
+  Requires        = ("Disks");
+  OrderPreference = "Early";
+}

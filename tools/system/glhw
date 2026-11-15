@@ -1,0 +1,10 @@
+#!/bin/sh
+# glhw <command> [args]: run a program on the HARDWARE 855GM OpenGL stack (/Library/OGL1041).
+# The HOME-variant GL driver gives hardware GL only to processes without HOME, so HOME is removed.
+# Hardware GL works for 2D/fixed-function drawing (iTunes visualizer); it cannot read back the combined
+# depth/stencil buffer (docs/18), so programs that pick with glReadPixels (Chess) need glsw instead.
+unset HOME
+DYLD_FRAMEWORK_PATH=/Library/OGL1041
+DYLD_LIBRARY_PATH=/Library/OGL1041/OpenGL.framework/Versions/A/Libraries
+export DYLD_FRAMEWORK_PATH DYLD_LIBRARY_PATH
+exec "$@"
