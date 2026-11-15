@@ -31,3 +31,13 @@ Not included: `iwi.kext` (the Wi-Fi driver) because it embeds Intel's firmware, 
 **`vlc/libmacosx_plugin.dylib.noaccel`** (`23c93ba563cc71c148486040c8ab7784`) - VLC 0.9.10 (Intel) macosx plug-in with the "accelerated pixel format required" request removed (`tools/vlc_noaccel.py`). Plays on software GL, but only at ~1 fps (see [docs/14](../docs/14-cache-flush-video-vlc-wifi.md)).
 
 Video files: use `tools/encode_tiger_video.sh` (Baseline, 360 lines, native frame rate).
+
+## Added 2026-11-15
+| File | md5 | What |
+|---|---|---|
+| `variants/AppleIntel830.p54t` | `b249071491068ec5e3adcaf8025d7633` | **stable default**: p54 with a 100x longer `waitForTimeStamp` limit (`mk_p54.py ... 200000000`) |
+| `apple-derived/AppleIntel830GLDriver.home-variant.ycc` | `b8005166f412b8fcec27a0cbf192e941` | HOME-variant GL driver with both GL_APPLE_ycbcr_422 table records set to SWAPY (`tools/ycc_hw.py`); supersedes the earlier "swap" version |
+| `apple-derived/GLEngine.1041.ycc` | `91ff01fdd0f7500d810b300ab4e4b1a3` | 10.4.1 GLEngine (path-rewritten copy) advertising texture_rectangle / bgra / ycbcr_422 |
+| `cpupin/cpupin.kext` | | CPU SpeedStep pin kext (source `tools/cpupin/cpupin.c`) |
+
+One-line setup of everything: [`setup/`](../setup/README.md).

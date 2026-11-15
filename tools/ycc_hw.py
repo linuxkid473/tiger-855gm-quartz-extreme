@@ -7,10 +7,11 @@ Two small patches (both verified on a Dell Inspiron 510m with VLC 0.9.10):
    The driver's per-format texture table (9 dwords per record) already has
    GL_APPLE_ycbcr_422 records that use the 855GM's native 4:2:2 map format
    (MAPSURF_422 = 0x140) with the sampler colour-space-conversion bit (0x4).
-   Their byte-order field was assigned the wrong way round for little-endian:
-       record YCBCR/8_8_REV (type 0x85bb) @0x191f8 : 0x144 (SWAPY) -> 0x14c (NORMAL)
+   VLC uploads type 0x85ba (8_8), whose record had NORMAL (0x14c); it needs SWAPY (0x144):
+       record YCBCR/8_8_REV (type 0x85bb) @0x191f8 : 0x144 (SWAPY)  (unchanged)
        record YCBCR/8_8     (type 0x85ba) @0x1921c : 0x14c (NORMAL) -> 0x144 (SWAPY)
-   Swapping the two makes VLC's UYVY picture render with correct colour.
+   Both records end up SWAPY.  (An earlier version of this script *swapped* the two records; that fixed
+   VLC but broke WindowServer's own video-surface path, which uses 8_8_REV: radioactive colours.)
 
 2. GLEngine (10.4.1 copy, i386 slice at file offset 4096)
    The hardware renderer reports none of the 73 optional extension bits, so it
@@ -30,10 +31,11 @@ def patch_driver(src, dst):
     d = bytearray(open(src, 'rb').read())
     assert len(d) == 111004, 'unexpected driver size'
     rev, std = struct.unpack('<II', bytes(d[0x191f8:0x191fc]) + bytes(d[0x1921c:0x1921c + 4]))
-    if (rev, std) == (0x144, 0x14c):
-        struct.pack_into('<I', d, 0x191f8, 0x14c)
+    if rev == 0x144 and std in (0x14c, 0x144):
         struct.pack_into('<I', d, 0x1921c, 0x144)
-    elif (rev, std) != (0x14c, 0x144):
+    elif (rev, std) == (0x14c, 0x144):       # output of the old swapping version: put 8_8_REV back
+        struct.pack_into('<I', d, 0x191f8, 0x144)
+    else:
         raise SystemExit('driver table not as expected: %x %x' % (rev, std))
     open(dst, 'wb').write(d)
 

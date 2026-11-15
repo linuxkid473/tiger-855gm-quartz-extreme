@@ -1,5 +1,7 @@
 # Hardware YCbCr video (VLC) on the 855GM
 
+> **Correction (see [17](17-video-players-dead-ends-2026-11-15.md)):** the final table fix described below as *swapping* the two records is wrong for WindowServer's own video path. The shipped/installed fix sets **both** records to SWAPY (`0x144`), md5 `b8005166f412b8fcec27a0cbf192e941`.
+
 **Result:** VLC 0.9.10 plays 360p H.264 through the *hardware* renderer with correct colour, no dropped frames (0 "late picture" warnings in a 45 s run) and about **27% CPU / 65% idle**. With the software renderer the same player pegged the CPU at ~1 fps (85% of the video thread in the fragment-program emulator, see [14](14-cache-flush-video-vlc-wifi.md)).
 
 ## What was wrong

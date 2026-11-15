@@ -23,6 +23,7 @@ This is a research/port log as much as a tool: it documents every wrong turn, be
 | 12 | whole-cache `wbinvd` on every GPU submission | flush just the 4 KB ring with `clflush` | **p56** (`mk_p56.py`), [docs/14](docs/14-cache-flush-video-vlc-wifi.md) |
 | 13 | VLC video ~1 fps in the software renderer (hardware renderer lacks texture_rectangle / bgra / ycbcr_422; YCbCr byte order wrong in the driver's format table) | advertise the three extensions + swap the two YCbCr table records | **`tools/ycc_hw.py`**, `vlc-hw` launcher, [docs/15](docs/15-hardware-ycbcr-video.md) |
 | 14 | hardware-GL VLC hangs the GPU; p54's GPU wait gave up after < 2 s instead of ~10 s; CPU dropped to 600 MHz every ~69 s; Wi-Fi slow without ethernet | **p54t** (p54 with 100x timeout), `cpupin` kext, iwi-connect v4 | [docs/16](docs/16-gpu-hang-cpu-pin-wifi-2026-11-15.md) |
+| 15 | video players: QuickTime is the only fully reliable one; PowerVLC (SSE3) and MPlayer window outputs (GPU lock-up) do not work; YCbCr table patch corrected (both records SWAPY) | see [docs/17](docs/17-video-players-dead-ends-2026-11-15.md) | |
 | 9 | QuickTime video uses 80-100% CPU under QE: QTKit takes the Core Image path, whose fragment programs run in the *software* GL emulator | force QTKit's QuickDraw ("GWorld") path: two 9-byte getter patches | `tools/qtkit_force_gworld.py`, [docs/08](docs/08-video-playback.md) |
 
 Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte patches: [PATCH_TABLES.md](PATCH_TABLES.md) and [docs/03-patch-reference.md](docs/03-patch-reference.md).
@@ -50,6 +51,11 @@ Full story: [docs/02-investigation.md](docs/02-investigation.md). Exact byte pat
 | [`tiger-kexts/`](tiger-kexts/) | Kernel-extension sources: `gttwatch`, `gttfill`, `gpuregs`, `gpudump`, `gpupoke`, `mmiodiff`, `gpustress` (test harness that submits batches through Apple's own ring path), and the Intel 2200BG Wi-Fi driver; build scripts; `prebuilt/*.tar` |
 | [`bootdump/`](bootdump/) | Linux (GParted Live + i915) reference tooling: GEM batch emitters (Mesa-i830 style and an IGT gen2 port), a ctypes ioctl runner, MMIO register dumps from Linux and from a cold BIOS boot, a 16-bit real-mode register dumper |
 | [`tiger-ethernet-510m/`](tiger-ethernet-510m/) | Notes + scripts for the PRO/100 VE Ethernet kext fix (one-instruction patch) |
+
+## Recreate the whole setup in one line
+```bash
+./setup/recreate.sh vihaannathan@192.168.0.235 ~/.ssh/id_rsa_tiger   # then reboot the Dell; details in setup/README.md
+```
 
 ## Quick start (high level)
 
